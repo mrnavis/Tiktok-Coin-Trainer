@@ -1,0 +1,77 @@
+src/styles.css
+:root {
+  --bg: #f8fafc;
+  --card: #ffffff;
+  --muted: #64748b;
+  --text: #0f172a;
+  --ok: #10b981;
+  --warn: #f59e0b;
+  --danger: #ef4444;
+  --ring: #eab308;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { height: 100%; }
+
+body {
+  margin: 0;
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Noto Sans, Ubuntu, Cantarell, Helvetica Neue, Arial;
+  color: var(--text);
+  background: linear-gradient(to bottom, #fff, var(--bg));
+}
+
+.container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+h1 { font-size: 28px; margin: 0 0 6px; }
+.subtitle { color: var(--muted); margin-bottom: 16px; }
+
+.grid { display: grid; gap: 16px; }
+.grid-3 { grid-template-columns: 2fr 1fr; }
+@media (max-width: 900px) { .grid-3 { grid-template-columns: 1fr; } }
+
+.card {
+  background: var(--card);
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 16px;
+  box-shadow: 0 1px 0 rgba(0,0,0,0.02);
+}
+
+.card h2 { margin: 0 0 8px; font-size: 18px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+.badge {
+  font-size: 11px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: #f1f5f9;
+  color: #0f172a;
+  border: 1px solid #e5e7eb;
+}
+
+.badge.active { background: #0f172a; color: #fff; }
+.input { padding: 8px 10px; border-radius: 10px; border: 1px solid #cbd5e1; }
+
+.btn {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  cursor: pointer;
+}
+
+.btn.primary { background: #0f172a; color: #fff; border-color: #0f172a; }
+.btn:disabled { opacity: .6; cursor: not-allowed; }
+
+.progress { height: 12px; background: #e2e8f0; border-radius: 999px; overflow: hidden; }
+.progress > div { height: 100%; }
+
+.kv { display: flex; gap: 8px; align-items: center; color: var(--muted); }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+
+.note { font-size: 13px; color: var(--muted); }
+.toast { background: #fff1f2; border: 1px solid #fecaca; color: #9f1239; padding: 10px 12px; border-radius: 12px; }
+.helper { background: #ecfeff; border: 1px solid #a5f3fc; color: #155e75; padding: 10px 12px; border-radius: 12px; }
+.grid-3-col { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
+.promo { background: linear-gradient(135deg, #ffe4e6, #fecdd3); border: 1px solid #fda4af; }
+.footer { text-align: center; color: var(--muted); font-size: 12px; padding-top: 8px; }
+.small { font-size: 12px; }
