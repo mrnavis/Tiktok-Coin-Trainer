@@ -18,23 +18,23 @@ const DISPLAY_PACKS = [
 
 // Últimos 4 estáticos (NO 1234)
 const CARD_LAST4 = "7284"
-// Monto interno para enviar (no se muestra en UI)
-const SEND_AMOUNT = 100
 
 export default function App () {
   const [coins, setCoins] = useState(99999999)
   const [selected, setSelected] = useState("c30")
   const [customCoins, setCustomCoins] = useState(300)
   const [discount, setDiscount] = useState(true)
-  const [targetUser, setTargetUser] = useState("")
 
-  // UI modales/estados
+  // Envío
+  const [targetUser, setTargetUser] = useState("")
+  const [sendAmount, setSendAmount] = useState(100) // <- cantidad editable
+
+  // Modales/estados
   const [buyOpen, setBuyOpen] = useState(false)
   const [sendOpen, setSendOpen] = useState(false)
   const [processing, setProcessing] = useState(false)
-  const [success, setSuccess] = useState(false)       // muestra paloma verde
-  const [sendCountdown, setSendCountdown] = useState(0) // 3 → 2 → 1 → 0 para habilitar Confirmar
-
+  const [success, setSuccess] = useState(false)
+  const [sendCountdown, setSendCountdown] = useState(0) // 3s antes de habilitar Confirmar
   const [toast, setToast] = useState(null)
 
   // packs con descuento
@@ -54,7 +54,7 @@ export default function App () {
     return discount ? +(base * 0.75).toFixed(2) : base
   }, [currentPack, customCoins, discount])
 
-  // -------- Comprar --------
+  /* ---------------- Comprar ---------------- */
   const openBuy = () => { setSuccess(false); setBuyOpen(true) }
   const closeBuy = () => { if (!processing) { setBuyOpen(false); setSuccess(false) } }
 
@@ -64,16 +64,24 @@ export default function App () {
       const add = currentPack?.custom ? customCoins : (currentPack?.coins || 0)
       setCoins(c => c + add)
       setProcessing(false)
-      setSuccess(true) // muestra paloma dentro del modal
+      setSuccess(true) // paloma verde dentro del modal
     }, 1500)
   }
 
-  // -------- Enviar --------
+  /* ---------------- Enviar ---------------- */
   const openSend = () => {
-    if (!targetUser.trim()) {
+    const name = targetUser.trim()
+    if (!name) {
       setToast({ kind: "warn", text: "Escribe un usuario destino" })
-      clearToastLater()
-      return
+      return clearToastLater()
+    }
+    if (!Number.isFinite(sendAmount) || sendAmount <= 0) {
+      setToast({ kind: "warn", text: "Indica una cantidad válida a enviar" })
+      return clearToastLater()
+    }
+    if (sendAmount > coins) {
+      setToast({ kind: "warn", text: "Saldo insuficiente" })
+      return clearToastLater()
     }
     setSuccess(false)
     setSendOpen(true)
@@ -95,8 +103,7 @@ export default function App () {
     if (sendCountdown > 0) return
     setProcessing(true)
     setTimeout(() => {
-      // descuenta internamente, sin mostrar cantidad en UI
-      setCoins(c => c - SEND_AMOUNT)
+      setCoins(c => c - sendAmount) // descuenta exactamente lo elegido
       setProcessing(false)
       setSuccess(true) // paloma dentro del modal
       setToast({ kind: "ok", text: `Monedas enviadas con éxito a ${targetUser}` })
@@ -202,8 +209,18 @@ export default function App () {
       {/* Enviar monedas */}
       <div className="panel sendbox">
         <div className="strong">Enviar monedas</div>
-        <div className="row">
+        <div className="row" style={{ gap: 8, alignItems: "center" }}>
           <input className="input" placeholder="Usuario" value={targetUser} onChange={e => setTargetUser(e.target.value)} />
+          <input
+            className="input"
+            type="number"
+            min={1}
+            step={1}
+            value={sendAmount}
+            onChange={e => setSendAmount(Math.max(1, Math.floor(Number(e.target.value || 0))))}
+            style={{ width: 120 }}
+            placeholder="Cantidad"
+          />
           <button className="btn primary" onClick={openSend}>Enviar</button>
         </div>
       </div>
@@ -257,13 +274,13 @@ export default function App () {
             {!success ? (
               <>
                 <div className="modal-title">Confirmar envío</div>
-                <div className="row" style={{ justifyContent: "space-between", marginBottom: 10 }}>
+                <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
                   <div className="muted small">Usuario destino</div>
-                  <div className="strong">@{targetUser}</div>
+                  <div className="strong">{targetUser}</div>
                 </div>
-                <div className="row" style={{ justifyContent: "space-between", marginBottom: 14 }}>
-                  <div className="muted small">Acción</div>
-                  <div className="strong">Enviar monedas</div>
+                <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
+                  <div className="muted small">Cantidad</div>
+                  <div className="strong">{sendAmount} monedas</div>
                 </div>
 
                 <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
@@ -281,7 +298,7 @@ export default function App () {
                 {processing && <div className="waiting"><div className="spinner" /></div>}
               </>
             ) : (
-              <SuccessBlock text={`Monedas enviadas con éxito a @${targetUser || "usuario"}`} onClose={closeSend} />
+              <SuccessBlock text={`Monedas enviadas con éxito a ${targetUser} (${sendAmount} monedas)`} onClose={closeSend} />
             )}
           </motion.div>
         </div>
