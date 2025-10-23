@@ -75,3 +75,26 @@ h1 { font-size: 28px; margin: 0 0 6px; }
 .promo { background: linear-gradient(135deg, #ffe4e6, #fecdd3); border: 1px solid #fda4af; }
 .footer { text-align: center; color: var(--muted); font-size: 12px; padding-top: 8px; }
 .small { font-size: 12px; }
+/* Modal y elementos para la simulación de compra */
+.modal-overlay {
+  position: fixed; inset: 0; display: flex; align-items: center; justify-content: center;
+  background: rgba(2,6,23,0.45); z-index: 80;
+}
+.modal {
+  width: 420px; background: #fff; border-radius: 12px; padding: 18px; box-shadow: 0 10px 30px rgba(2,6,23,0.18);
+}
+.spinner {
+  width: 36px; height: 36px; border-radius: 999px; border: 4px solid #f3f4f6; border-top-color: #0f172a; margin: 0 auto;
+  animation: spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Toasts */
+.toast { position: fixed; right: 18px; bottom: 18px; padding: 10px 12px; border-radius: 10px; background: #ecfeff; border: 1px solid #a5f3fc; color: #064e63; z-index: 90; }
+.toast-error { background: #fff1f2; border: 1px solid #fecaca; color: #991b1b; }
+.toast-success { background: #ecfdf5; border: 1px solid #bbf7d0; color: #064e3b; }
+.toast-info { background: #eff6ff; border: 1px solid #bfdbfe; color: #083344; }
+
+/* Ajustes pequeños para tiles / header ya existentes */
+.tile.selected { border-color: #0f172a; background: #f8fafc; }
+.buybar .btn { min-width: 120px; }
