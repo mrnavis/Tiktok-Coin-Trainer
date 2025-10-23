@@ -16,30 +16,29 @@ const DISPLAY_PACKS = [
   { id: "custom", custom: true },
 ]
 
-// Últimos 4 estáticos
+// Últimos 4 estáticos de la tarjeta
 const CARD_LAST4 = "7284"
 
 export default function App () {
   const [coins, setCoins] = useState(99999999)
 
-  // selección de pack / descuento
+  // Selección y descuento
   const [selected, setSelected] = useState("c30")
   const [customCoins, setCustomCoins] = useState(300)
   const [discount, setDiscount] = useState(true)
 
-  // envío
+  // Envío
   const [targetUser, setTargetUser] = useState("")
   const [sendAmount, setSendAmount] = useState(100)
   const [lastSend, setLastSend] = useState({ user: "", amount: 0, bought: 0 })
 
-  // modales y estados
+  // Modales y estado de UI
   const [buyOpen, setBuyOpen]   = useState(false)
   const [sendOpen, setSendOpen] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [success, setSuccess] = useState(false)
   const [toast, setToast] = useState(null)
 
-  // aplica 25% si el switch está ON
   const effectivePacks = useMemo(() => {
     if (!discount) return DISPLAY_PACKS
     return DISPLAY_PACKS.map(p => (p.custom ? p : { ...p, price: +(p.price * 0.75).toFixed(2) }))
@@ -48,17 +47,17 @@ export default function App () {
   const currentPack = effectivePacks.find(p => p.id === selected) || effectivePacks[0]
   const packCoins = currentPack?.custom ? customCoins : (currentPack?.coins || 0)
 
-  // total a pagar del pack seleccionado
+  // Total a pagar del pack seleccionado
   const totalPrice = useMemo(() => {
     if (!currentPack) return 0
     if (!currentPack.custom) return currentPack.price
-    // estimación lineal educativa: 100 monedas ≈ 80.25/350 * 100
+    // estimación lineal educativa (basada en c350=80.25)
     const unit = 80.25 / 350
     const base = +(customCoins * unit).toFixed(2)
     return discount ? +(base * 0.75).toFixed(2) : base
   }, [currentPack, customCoins, discount])
 
-  /* ------------ Comprar ------------ */
+  /* ------------ Compra ------------ */
   const openBuy  = () => { setSuccess(false); setBuyOpen(true) }
   const closeBuy = () => { if (!processing) { setBuyOpen(false); setSuccess(false) } }
 
@@ -66,10 +65,10 @@ export default function App () {
     if (totalPrice <= 0) return
     setProcessing(true)
     setTimeout(() => {
-      setCoins(c => c + packCoins) // sumamos lo comprado
+      setCoins(c => c + packCoins)
       setProcessing(false)
       setSuccess(true)
-    }, 1300)
+    }, 1200)
   }
 
   /* ------------ Enviar (comprar y enviar) ------------ */
@@ -79,7 +78,6 @@ export default function App () {
     if (!Number.isFinite(sendAmount) || sendAmount <= 0) {
       setToast({ kind:"warn", text:"Indica una cantidad válida a enviar" }); return clearToastLater()
     }
-    // No imponemos límite; si envías más que el pack, tu saldo puede bajar (porque restaremos del saldo)
     setSuccess(false)
     setSendOpen(true)
   }
@@ -90,9 +88,8 @@ export default function App () {
     const user = targetUser.trim()
     const amount = sendAmount
     const bought = packCoins
-
     setTimeout(() => {
-      // Primero añadimos lo comprado, luego enviamos (descontamos) del saldo
+      // Compra + envío: sumamos lo comprado y descontamos lo enviado
       setCoins(c => c + bought - amount)
       setProcessing(false)
       setSuccess(true)
@@ -100,7 +97,7 @@ export default function App () {
       setTargetUser("")
       setToast({ kind:"ok", text:`Se enviaron ${amount} monedas a ${user}` })
       clearToastLater(2800)
-    }, 1400)
+    }, 1300)
   }
 
   function clearToastLater (ms = 2200) {
@@ -109,13 +106,22 @@ export default function App () {
 
   return (
     <div className="page">
-      {/* encabezado reducido */}
+      {/* Topbar */}
       <div className="topbar">
         <div className="title-xl">Obtener Monedas</div>
         <a className="link" href="#" onClick={e => e.preventDefault()}>Iniciar sesión</a>
       </div>
 
-      {/* banner de descuento */}
+      {/* SALDO con ícono */}
+      <div className="balance-box">
+        <div className="balance-label">Saldo actual:</div>
+        <div className="balance-value">
+          <img src="/coin.png" alt="coin" className="coin-img" />
+          {coins.toLocaleString("es-MX")}
+        </div>
+      </div>
+
+      {/* Banner de descuento */}
       <div className="notice">
         <strong>Recargar:</strong> Ahorra un 25 % con una tarifa de servicio de terceros más baja.
         <label className="toggle">
@@ -124,14 +130,14 @@ export default function App () {
         </label>
       </div>
 
-      {/* grid de paquetes estilo TikTok */}
+      {/* Grid de paquetes */}
       <div className="pack-grid">
         {effectivePacks.map(p => {
           const isSel = selected === p.id
           if (p.custom) {
             return (
               <button key={p.id} className={"pack custom " + (isSel ? "selected" : "")} onClick={() => setSelected(p.id)}>
-                <div className="coin">🟡</div>
+                <img src="/coin.png" alt="coin" className="coin-img" />
                 <div className="big">Personalizar</div>
                 <div className="muted">Gran cantidad subvencionada</div>
               </button>
@@ -139,7 +145,7 @@ export default function App () {
           }
           return (
             <button key={p.id} className={"pack " + (isSel ? "selected" : "")} onClick={() => setSelected(p.id)}>
-              <div className="coin">🟡</div>
+              <img src="/coin.png" alt="coin" className="coin-img" />
               <div className="big">{p.coins.toLocaleString("es-MX")}</div>
               <div className="muted">{mxn(p.price)}</div>
             </button>
@@ -147,7 +153,7 @@ export default function App () {
         })}
       </div>
 
-      {/* total + recargar + sello seguro */}
+      {/* Total + Recargar */}
       <div className="paycard" style={{ marginTop: 12 }}>
         <div className="total">
           <div>Total</div>
@@ -170,7 +176,12 @@ export default function App () {
       <div className="panel sendbox" style={{ marginTop: 14 }}>
         <div className="strong">Enviar monedas</div>
         <div className="row" style={{ gap: 8, alignItems: "center" }}>
-          <input className="input" placeholder="Usuario" value={targetUser} onChange={e => setTargetUser(e.target.value)} />
+          <input
+            className="input"
+            placeholder="Usuario"
+            value={targetUser}
+            onChange={e => setTargetUser(e.target.value)}
+          />
           <input
             className="input"
             type="number"
