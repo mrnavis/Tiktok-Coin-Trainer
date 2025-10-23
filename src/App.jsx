@@ -4,116 +4,102 @@ import { motion } from "framer-motion"
 const mxn = n =>
   n.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 2 })
 
-// Packs como en la UI
+// Paquetes y precios como TikTok (MXN)
 const DISPLAY_PACKS = [
-  { id: "c30",  coins: 30,  price: 6.89 },
-  { id: "c40",  coins: 40,  price: 9.19 },
-  { id: "c50",  coins: 50,  price: 11.49 },
-  { id: "c80",  coins: 80,  price: 18.35 },
-  { id: "c100", coins: 100, price: 22.95 },
-  { id: "c150", coins: 150, price: 34.39 },
-  { id: "c550", coins: 550, price: 126.09 },
+  { id: "c30",    coins: 30,    price: 6.89 },
+  { id: "c350",   coins: 350,   price: 80.25 },
+  { id: "c700",   coins: 700,   price: 160.49 },
+  { id: "c1400",  coins: 1400,  price: 320.95 },
+  { id: "c3500",  coins: 3500,  price: 802.39 },
+  { id: "c7000",  coins: 7000,  price: 1604.75 },
+  { id: "c17500", coins: 17500, price: 4011.85 },
   { id: "custom", custom: true },
 ]
 
-// Últimos 4 estáticos (NO 1234)
+// Últimos 4 estáticos
 const CARD_LAST4 = "7284"
 
 export default function App () {
   const [coins, setCoins] = useState(99999999)
+
+  // selección de pack / descuento
   const [selected, setSelected] = useState("c30")
   const [customCoins, setCustomCoins] = useState(300)
   const [discount, setDiscount] = useState(true)
 
-  // Envío
+  // envío
   const [targetUser, setTargetUser] = useState("")
   const [sendAmount, setSendAmount] = useState(100)
-  const [lastSend, setLastSend] = useState({ user: "", amount: 0 })
+  const [lastSend, setLastSend] = useState({ user: "", amount: 0, bought: 0 })
 
-  // Modales/estados
-  const [buyOpen, setBuyOpen] = useState(false)
+  // modales y estados
+  const [buyOpen, setBuyOpen]   = useState(false)
   const [sendOpen, setSendOpen] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [success, setSuccess] = useState(false)
-  const [sendCountdown, setSendCountdown] = useState(0)
   const [toast, setToast] = useState(null)
 
-  // packs con descuento
+  // aplica 25% si el switch está ON
   const effectivePacks = useMemo(() => {
     if (!discount) return DISPLAY_PACKS
     return DISPLAY_PACKS.map(p => (p.custom ? p : { ...p, price: +(p.price * 0.75).toFixed(2) }))
   }, [discount])
 
   const currentPack = effectivePacks.find(p => p.id === selected) || effectivePacks[0]
+  const packCoins = currentPack?.custom ? customCoins : (currentPack?.coins || 0)
 
-  // total a pagar
+  // total a pagar del pack seleccionado
   const totalPrice = useMemo(() => {
     if (!currentPack) return 0
     if (!currentPack.custom) return currentPack.price
-    const unit = 22.95 / 100
+    // estimación lineal educativa: 100 monedas ≈ 80.25/350 * 100
+    const unit = 80.25 / 350
     const base = +(customCoins * unit).toFixed(2)
     return discount ? +(base * 0.75).toFixed(2) : base
   }, [currentPack, customCoins, discount])
 
-  /* ---------------- Comprar ---------------- */
-  const openBuy = () => { setSuccess(false); setBuyOpen(true) }
+  /* ------------ Comprar ------------ */
+  const openBuy  = () => { setSuccess(false); setBuyOpen(true) }
   const closeBuy = () => { if (!processing) { setBuyOpen(false); setSuccess(false) } }
 
   const confirmBuy = () => {
+    if (totalPrice <= 0) return
     setProcessing(true)
     setTimeout(() => {
-      const add = currentPack?.custom ? customCoins : (currentPack?.coins || 0)
-      setCoins(c => c + add)
+      setCoins(c => c + packCoins) // sumamos lo comprado
       setProcessing(false)
       setSuccess(true)
-    }, 1500)
+    }, 1300)
   }
 
-  /* ---------------- Enviar ---------------- */
+  /* ------------ Enviar (comprar y enviar) ------------ */
   const openSend = () => {
     const name = targetUser.trim()
-    if (!name) {
-      setToast({ kind: "warn", text: "Escribe un usuario destino" })
-      return clearToastLater()
-    }
+    if (!name) { setToast({ kind:"warn", text:"Escribe un usuario destino" }); return clearToastLater() }
     if (!Number.isFinite(sendAmount) || sendAmount <= 0) {
-      setToast({ kind: "warn", text: "Indica una cantidad válida a enviar" })
-      return clearToastLater()
+      setToast({ kind:"warn", text:"Indica una cantidad válida a enviar" }); return clearToastLater()
     }
-    if (sendAmount > coins) {
-      setToast({ kind: "warn", text: "Saldo insuficiente" })
-      return clearToastLater()
-    }
+    // No imponemos límite; si envías más que el pack, tu saldo puede bajar (porque restaremos del saldo)
     setSuccess(false)
     setSendOpen(true)
-    startSendCountdown(3)
   }
   const closeSend = () => { if (!processing) { setSendOpen(false); setSuccess(false) } }
 
-  const startSendCountdown = (sec) => {
-    setSendCountdown(sec)
-    const id = setInterval(() => {
-      setSendCountdown(prev => {
-        if (prev <= 1) { clearInterval(id); return 0 }
-        return prev - 1
-      })
-    }, 1000)
-  }
-
   const confirmSend = () => {
-    if (sendCountdown > 0) return
+    setProcessing(true)
     const user = targetUser.trim()
     const amount = sendAmount
+    const bought = packCoins
 
-    setProcessing(true)
     setTimeout(() => {
-      setCoins(c => c - amount)
+      // Primero añadimos lo comprado, luego enviamos (descontamos) del saldo
+      setCoins(c => c + bought - amount)
       setProcessing(false)
       setSuccess(true)
-      setLastSend({ user, amount }) // guardar datos del envío
-      setToast({ kind: "ok", text: `Monedas enviadas con éxito a ${user}` })
+      setLastSend({ user, amount, bought })
       setTargetUser("")
-      clearToastLater(3000)
+      setToast({ kind:"ok", text:`Se enviaron ${amount} monedas a ${user}` })
+      clearToastLater(2800)
     }, 1400)
   }
 
@@ -123,31 +109,13 @@ export default function App () {
 
   return (
     <div className="page">
+      {/* encabezado reducido */}
       <div className="topbar">
         <div className="title-xl">Obtener Monedas</div>
-        <a className="link" href="#" onClick={e => e.preventDefault()}>Ver historial de transacciones</a>
+        <a className="link" href="#" onClick={e => e.preventDefault()}>Iniciar sesión</a>
       </div>
 
-      {/* Header */}
-      <div className="header-cards">
-        <div className="panel profile">
-          <div className="row">
-            <div className="avatar" />
-            <div>
-              <div className="user">navii.exe</div>
-              <div className="muted small">0</div>
-            </div>
-          </div>
-          <div className="muted small">Canjear por Monedas ▸</div>
-          <div className="muted small">Saldo de Regalos LIVE: $0.00</div>
-        </div>
-        <div className="panel invite">
-          <div className="muted small">Invita y consigue recompensas ▸</div>
-          <div className="code">U4XPSF68</div>
-        </div>
-      </div>
-
-      {/* Banner */}
+      {/* banner de descuento */}
       <div className="notice">
         <strong>Recargar:</strong> Ahorra un 25 % con una tarifa de servicio de terceros más baja.
         <label className="toggle">
@@ -156,7 +124,7 @@ export default function App () {
         </label>
       </div>
 
-      {/* Grid de paquetes */}
+      {/* grid de paquetes estilo TikTok */}
       <div className="pack-grid">
         {effectivePacks.map(p => {
           const isSel = selected === p.id
@@ -172,15 +140,34 @@ export default function App () {
           return (
             <button key={p.id} className={"pack " + (isSel ? "selected" : "")} onClick={() => setSelected(p.id)}>
               <div className="coin">🟡</div>
-              <div className="big">{p.coins}</div>
+              <div className="big">{p.coins.toLocaleString("es-MX")}</div>
               <div className="muted">{mxn(p.price)}</div>
             </button>
           )
         })}
       </div>
 
-      {/* Enviar monedas */}
-      <div className="panel sendbox">
+      {/* total + recargar + sello seguro */}
+      <div className="paycard" style={{ marginTop: 12 }}>
+        <div className="total">
+          <div>Total</div>
+          <div className="price">{mxn(totalPrice)}</div>
+        </div>
+        <button
+          className="recargar"
+          onClick={openBuy}
+          disabled={totalPrice <= 0}
+          style={{ opacity: totalPrice <= 0 ? 0.5 : 1 }}
+        >
+          Recargar
+        </button>
+        <div className="secure">
+          <span className="badge">SECURE</span><span>Payment</span>
+        </div>
+      </div>
+
+      {/* Enviar */}
+      <div className="panel sendbox" style={{ marginTop: 14 }}>
         <div className="strong">Enviar monedas</div>
         <div className="row" style={{ gap: 8, alignItems: "center" }}>
           <input className="input" placeholder="Usuario" value={targetUser} onChange={e => setTargetUser(e.target.value)} />
@@ -196,45 +183,97 @@ export default function App () {
           />
           <button className="btn primary" onClick={openSend}>Enviar</button>
         </div>
+        <div className="muted small" style={{ marginTop: 6 }}>
+          Al enviar, se comprará el paquete seleccionado y se enviarán esas monedas al usuario.
+        </div>
       </div>
 
-      {/* MODAL: Enviar */}
-      {sendOpen && (
-        <div className="modal-overlay" onClick={closeSend}>
-          <motion.div className="modal" onClick={e => e.stopPropagation()} initial={{ scale: .96, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+      {/* MODAL: Confirmar pago */}
+      {buyOpen && (
+        <div className="modal-overlay" onClick={closeBuy}>
+          <motion.div className="modal" onClick={e => e.stopPropagation()} initial={{ scale:.96, opacity:0 }} animate={{ scale:1, opacity:1 }}>
             {!success ? (
               <>
-                <div className="modal-title">Confirmar envío</div>
-                <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
-                  <div className="muted small">Usuario destino</div>
-                  <div className="strong">{targetUser}</div>
+                <div className="modal-title">Confirmar pago</div>
+                <div className="payrow" style={{ marginBottom: 8 }}>
+                  <span className="badge">VISA</span>
+                  <div className="muted">•••• {CARD_LAST4}</div>
                 </div>
-                <div className="row" style={{ justifyContent: "space-between", marginBottom: 8 }}>
-                  <div className="muted small">Cantidad</div>
-                  <div className="strong">{sendAmount} monedas</div>
+                <div className="row" style={{ justifyContent:"space-between", marginBottom:10 }}>
+                  <div className="muted small">Compra</div>
+                  <div className="strong">{packCoins.toLocaleString("es-MX")} monedas</div>
                 </div>
-                <div className="row" style={{ justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                  <div className="muted small">Confirmar habilitado en</div>
-                  <div className="price">{sendCountdown}s</div>
+                <div className="row" style={{ justifyContent:"space-between", marginBottom:14 }}>
+                  <div className="muted small">Total</div>
+                  <div className="price">{mxn(totalPrice)}</div>
                 </div>
 
-                <div className="row" style={{ justifyContent: "flex-end", gap: 8 }}>
-                  <button className="btn" onClick={closeSend} disabled={processing}>Cancelar</button>
-                  <button className="btn primary" onClick={confirmSend} disabled={processing || sendCountdown > 0}>
-                    {processing ? "Procesando..." : (sendCountdown > 0 ? `Esperar ${sendCountdown}s` : "Confirmar")}
+                <div className="row" style={{ justifyContent:"flex-end", gap:8 }}>
+                  <button className="btn" onClick={closeBuy} disabled={processing}>Cancelar</button>
+                  <button className="btn primary" onClick={confirmBuy} disabled={processing || totalPrice<=0}>
+                    {processing ? "Procesando..." : "Pagar"}
                   </button>
                 </div>
 
                 {processing && <div className="waiting"><div className="spinner" /></div>}
               </>
             ) : (
-              <SuccessBlock text={`Monedas enviadas con éxito a ${lastSend.user} (${lastSend.amount} monedas)`} onClose={closeSend} />
+              <SuccessBlock text="Pago aprobado" onClose={closeBuy} />
             )}
           </motion.div>
         </div>
       )}
 
-      {/* TOAST */}
+      {/* MODAL: Enviar = Comprar y enviar */}
+      {sendOpen && (
+        <div className="modal-overlay" onClick={closeSend}>
+          <motion.div className="modal" onClick={e => e.stopPropagation()} initial={{ scale:.96, opacity:0 }} animate={{ scale:1, opacity:1 }}>
+            {!success ? (
+              <>
+                <div className="modal-title">Confirmar compra y envío</div>
+                <div className="payrow" style={{ marginBottom: 8 }}>
+                  <span className="badge">VISA</span>
+                  <div className="muted">•••• {CARD_LAST4}</div>
+                </div>
+
+                <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
+                  <div className="muted small">Paquete a comprar</div>
+                  <div className="strong">{packCoins.toLocaleString("es-MX")} monedas</div>
+                </div>
+                <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
+                  <div className="muted small">Usuario destino</div>
+                  <div className="strong">{targetUser}</div>
+                </div>
+                <div className="row" style={{ justifyContent:"space-between", marginBottom:10 }}>
+                  <div className="muted small">Cantidad a enviar</div>
+                  <div className="strong">{sendAmount.toLocaleString("es-MX")} monedas</div>
+                </div>
+
+                <div className="row" style={{ justifyContent:"space-between", marginBottom:14 }}>
+                  <div className="muted small">Total a pagar</div>
+                  <div className="price">{mxn(totalPrice)}</div>
+                </div>
+
+                <div className="row" style={{ justifyContent:"flex-end", gap:8 }}>
+                  <button className="btn" onClick={closeSend} disabled={processing}>Cancelar</button>
+                  <button className="btn primary" onClick={confirmSend} disabled={processing || totalPrice<=0}>
+                    {processing ? "Procesando..." : "Confirmar"}
+                  </button>
+                </div>
+
+                {processing && <div className="waiting"><div className="spinner" /></div>}
+              </>
+            ) : (
+              <SuccessBlock
+                text={`Se compraron ${lastSend.bought.toLocaleString("es-MX")} y se enviaron ${lastSend.amount.toLocaleString("es-MX")} a ${lastSend.user}`}
+                onClose={closeSend}
+              />
+            )}
+          </motion.div>
+        </div>
+      )}
+
+      {/* Toast */}
       {toast && (
         <div className={"toast " + (toast.kind === "ok" ? "ok" : "warn")}>
           {toast.kind === "ok" ? <span className="check">✔</span> : <span className="warn">!</span>}
