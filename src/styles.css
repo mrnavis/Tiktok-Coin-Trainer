@@ -102,3 +102,67 @@ body { margin:0; background:#fff; color:#0f172a; font-family: ui-sans-serif, sys
   height: 26px;
   margin-right: 6px;
 }
+/* --- TikTok look --- */
+:root {
+  --tt-red:#fe2c55;
+  --tt-gray:#f7f7f8;
+  --tt-border:#e9e9ea;
+  --tt-text:#161823;
+  --tt-muted:#8a8b91;
+}
+
+.page { max-width: 980px; margin: 24px auto; font-family: system-ui, -apple-system, Segoe UI, Roboto, Inter, Arial; color: var(--tt-text); }
+
+.title-xl { font-size: 20px; font-weight: 700; }
+.topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom: 8px; }
+
+.balance-box { background:#fff; border:1px solid var(--tt-border); border-radius:12px; padding:10px 14px; margin:8px 0 14px; }
+.balance-label { font-size:13px; color:var(--tt-muted); }
+.balance-value { display:flex; align-items:center; gap:6px; font-size:20px; font-weight:800; }
+
+.notice { background:var(--tt-gray); border:1px solid var(--tt-border); border-radius:12px; padding:10px 14px; margin:8px 0 16px; font-size:14px; }
+.notice strong { font-weight:700; }
+.toggle { margin-left:10px; font-size:12px; color:var(--tt-muted); }
+
+.pack-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap:16px; }
+@media (max-width:900px){ .pack-grid{ grid-template-columns: repeat(3, 1fr);} }
+@media (max-width:640px){ .pack-grid{ grid-template-columns: repeat(2, 1fr);} }
+
+.pack, .pack.custom{
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  height:120px; border:1px solid var(--tt-border); border-radius:14px; background:#fff;
+  cursor:pointer; transition: box-shadow .15s ease, border-color .15s ease, background .15s ease;
+}
+.pack .big { font-size:26px; font-weight:800; line-height:1; margin-top:4px; }
+.pack .muted { color:var(--tt-muted); margin-top:6px; font-size:14px; }
+.pack:hover { box-shadow: 0 2px 10px rgba(0,0,0,.04); }
+.pack.selected { border-color: var(--tt-red); background: #fff7f9; }
+
+.coin-img { width:22px; height:22px; }
+
+.paycard { background:#fff; border:1px solid var(--tt-border); border-radius:12px; padding:14px; display:flex; align-items:center; gap:14px; }
+.total { display:flex; align-items:center; gap:8px; margin-right:auto; }
+.total .price { font-weight:800; }
+
+.recargar {
+  height:50px; padding:0 24px; background:var(--tt-red); color:#fff; border:none; border-radius:12px;
+  font-weight:700; cursor:pointer; transition: filter .15s ease;
+}
+.recargar:disabled { opacity:.5; cursor:not-allowed; }
+.recargar:not(:disabled):hover { filter: brightness(.95); }
+
+.payrow img, .payrow .badge { height:16px; margin-right:6px; }
+.badge{ display:inline-flex; align-items:center; justify-content:center; font-size:10px; border:1px solid var(--tt-border); border-radius:4px; padding:0 4px; color:#444; background:#fff; }
+
+.sendbox { background:#fff; border:1px solid var(--tt-border); border-radius:12px; padding:12px 14px; margin-top:16px; }
+.input { height:40px; border:1px solid var(--tt-border); border-radius:10px; padding:0 10px; }
+.btn.primary { background:var(--tt-red); color:#fff; border:none; height:40px; border-radius:10px; padding:0 16px; font-weight:700; }
+
+/* Modal base + “Order summary” look llega en la fase 2 */
+.modal { border-radius:14px; box-shadow:0 10px 30px rgba(0,0,0,.18); }
+.modal-title { font-weight:800; }
+
+/* Toast */
+.toast { position:fixed; bottom:18px; left:50%; transform:translateX(-50%); background:#fff; border:1px solid var(--tt-border); border-radius:12px; padding:10px 14px; display:flex; gap:10px; align-items:center; box-shadow:0 6px 20px rgba(0,0,0,.1); }
+.toast.ok .check{ color:#16a34a; font-weight:900; }
+.toast.warn .warn{ color:#b45309; font-weight:900; }
