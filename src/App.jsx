@@ -101,11 +101,15 @@ export default function App() {
   return (
     <div className="page dark">
       <div className="topbar">
-        <div className="title-xl">Get Coins</div>
-        <a className="link" href="#" onClick={e => e.preventDefault()}>
-          Iniciar sesión
-        </a>
-      </div>
+{/* ======== ENCABEZADO CON LOGO ======== */}
+<header className="header">
+  <div className="title-with-logo">
+    <img src="/tiktok-logo.png" alt="TikTok Logo" className="tiktok-logo" />
+    <h1>Get Coins</h1>
+  </div>
+  <button className="login-btn">Iniciar sesión</button>
+</header>
+
 
       <div className="balance-box">
         <div className="balance-label">Saldo actual:</div>
