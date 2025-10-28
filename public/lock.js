@@ -3,7 +3,7 @@
 (() => {
   const STORAGE_KEY = "gate_v1_ok";
   // 👉 Reemplaza esto por el SHA-256 de "usuario:contraseña" (ver paso 3)
-  const HASH = "REEMPLAZA_AQUI";
+  const HASH = "135e96962946992cab4cde48f755e3aec5bf5215da13e55494fd026f4b4ef245";
 
   // Estilos del overlay
   const CSS = `
