@@ -1,9 +1,8 @@
-<script>
 // Simple Gate v1 — Usuario/Contraseña en cliente (educativo)
 (() => {
   const STORAGE_KEY = "gate_v1_ok";
-  // 👉 Reemplaza esto por el SHA-256 de "usuario:contraseña" (ver paso 3)
-const HASH = "95e86d32d93d6ef013ba3ddee5995ea3140935396cbdd18d7a148ab4e4f5704d";
+  // 👉 Reemplaza por tu SHA-256 de "usuario:contraseña"
+  const HASH = "95e86d32d93d6ef013ba3ddee5995ea3140935396cbdd18d7a148ab4e4f5704d";
 
   // Estilos del overlay
   const CSS = `
@@ -82,4 +81,3 @@ const HASH = "95e86d32d93d6ef013ba3ddee5995ea3140935396cbdd18d7a148ab4e4f5704d";
   // API para salir manualmente (desde consola: gateLogout())
   window.gateLogout = () => localStorage.removeItem(STORAGE_KEY);
 })();
-</script>
