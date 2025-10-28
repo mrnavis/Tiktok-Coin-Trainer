@@ -1,7 +1,7 @@
-// Simple Gate v1 — Usuario/Contraseña en cliente (educativo)
+// Simple Gate v2 — Usuario/Contraseña en cliente (educativo)
 (() => {
   const STORAGE_KEY = "gate_v1_ok";
-  // 👉 Reemplaza por tu SHA-256 de "usuario:contraseña"
+  // 👉 Pega aquí tu SHA-256 de "usuario:contraseña"
   const HASH = "95e86d32d93d6ef013ba3ddee5995ea3140935396cbdd18d7a148ab4e4f5704d";
 
   // Estilos del overlay
@@ -58,8 +58,11 @@
     form.addEventListener("submit", async (e)=>{
       e.preventDefault();
       err.textContent = "";
-      const u = form.elements.u.value.trim();
-      const p = form.elements.p.value;
+      // normalización: quitamos espacios y "@" inicial
+      const uRaw = form.elements.u.value;
+      const pRaw = form.elements.p.value;
+      const u = (uRaw ?? "").trim().replace(/^@/,"");
+      const p = (pRaw ?? "").trim();
       const h = await sha256Hex(`${u}:${p}`);
       if (h === HASH){
         localStorage.setItem(STORAGE_KEY,"ok");
@@ -78,6 +81,16 @@
     if (!isUnlocked()) injectUI();
   });
 
-  // API para salir manualmente (desde consola: gateLogout())
+  // API para salir manualmente
   window.gateLogout = () => localStorage.removeItem(STORAGE_KEY);
+
+  // 🔍 Debug: compara el hash que se calcula con tu HASH
+  // Uso en consola: gateDebug("Navi","D4lila123")
+  window.gateDebug = async (u,p) => {
+    const entered = await sha256Hex(`${(u??"").trim().replace(/^@/,"")}:${(p??"").trim()}`);
+    console.log("Esperado:", HASH);
+    console.log("Calculado:", entered);
+    console.log("Coincide:", entered === HASH);
+    return entered;
+  };
 })();
