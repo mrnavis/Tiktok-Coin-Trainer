@@ -5,7 +5,7 @@ export default async function handler(req, res) {
     const handle = String(username || "").trim().replace(/^@/, "");
     if (!handle) return res.status(400).json({ error: "username required" });
 
-    // Si piden la imagen cruda (proxy), devolvemos bytes de imagen
+    // Si piden la imagen en crudo (proxy de imagen), devolvemos bytes
     if (raw === "1") {
       const avatar = await getAvatarUrl(handle);
       if (!avatar) return tinyTransparent(res);
@@ -17,6 +17,8 @@ export default async function handler(req, res) {
           "Accept": "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
           "Referer": "https://www.tiktok.com/",
           "Accept-Language": "es-ES,es;q=0.9,en;q=0.8",
+          "Sec-Fetch-Site": "same-origin",
+          "Sec-Fetch-Mode": "no-cors",
         },
         redirect: "follow",
       });
@@ -53,6 +55,7 @@ async function getAvatarUrl(handle) {
   });
   const html = await resp.text();
 
+  // Busca en varios campos comunes
   const patterns = [
     /"avatarLarger":"([^"]+)"/,
     /"avatarMedium":"([^"]+)"/,
