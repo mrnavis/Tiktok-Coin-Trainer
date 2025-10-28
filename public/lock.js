@@ -5,7 +5,7 @@
   const STORAGE_KEY = "gate_v1_ok";
 
   // 👇 Pega aquí el hash que generes con gateMake("usuario","password")
-  const HASH = "REEMPLAZA_AQUI";
+  const HASH = "a68ff2187ddd3d1ee8a30637a157bfd102044a23659e74c388e00db2e618c174";
 
   const CSS = `
   .gate__backdrop{position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:center;justify-content:center}
