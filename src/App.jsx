@@ -24,7 +24,7 @@ const COIN_IMG = `${BASE}coin.png`
 const AVATAR_FALLBACK = `${BASE}avatar-fallback.png`
 
 export default function App () {
-  const [coins, setCoins] = useState(99999999)
+  const [coins, setCoins] = useState(3569907)
 
   // compra
   const [selected, setSelected] = useState("c30")
