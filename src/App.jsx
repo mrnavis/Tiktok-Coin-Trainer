@@ -4,7 +4,7 @@ import { motion } from "framer-motion"
 const mxn = n =>
   n.toLocaleString("es-MX", { style: "currency", currency: "MXN", maximumFractionDigits: 2 })
 
-// Paquetes y precios como TikTok (MXN)
+// Paquetes (MXN)
 const DISPLAY_PACKS = [
   { id: "c30",    coins: 30,    price: 6.89 },
   { id: "c350",   coins: 350,   price: 80.25 },
@@ -18,7 +18,7 @@ const DISPLAY_PACKS = [
 
 const CARD_LAST4 = "7284"
 
-// ✅ Usa la base de Vite para que funcione en GitHub Pages (subcarpeta /<REPO>/)
+// ✅ base para GitHub Pages (sirve también local)
 const BASE = import.meta.env.BASE_URL || "/"
 const COIN_IMG = `${BASE}coin.png`
 const AVATAR_FALLBACK = `${BASE}avatar-fallback.png`
@@ -61,7 +61,38 @@ export default function App () {
     return discount ? +(base * 0.75).toFixed(2) : base
   }, [currentPack, customCoins, discount])
 
-  /* ---------------- Compra ---------------- */
+  /* ---------------- Enviar (arriba) ---------------- */
+  const openSend = () => {
+    const name = targetUser.trim()
+    if (!name) { note("warn", "Escribe un usuario destino"); return }
+    if (!Number.isFinite(sendAmount) || sendAmount <= 0) { note("warn", "Cantidad inválida"); return }
+    if (sendAmount > coins) { note("warn", "Saldo insuficiente"); return }
+
+    const handle = name.replace(/^@/, "")
+    // Avatar por Unavatar (frontend); si falla, cae a placeholder local
+    setRecipientAvatar(`https://unavatar.io/tiktok/${encodeURIComponent(handle)}`)
+
+    setSuccess(false)
+    setSendOpen(true)
+  }
+
+  const closeSend = () => { if (!processing) { setSendOpen(false); setSuccess(false) } }
+
+  const confirmSend = () => {
+    setProcessing(true)
+    const user = targetUser.trim()
+    const amount = sendAmount
+    setTimeout(() => {
+      setCoins(c => c - amount)
+      setProcessing(false)
+      setSuccess(true)
+      setLastSend({ user, amount })
+      setTargetUser("")
+      note("ok", `Se enviaron ${amount} monedas a ${user}`, 2800)
+    }, 1000)
+  }
+
+  /* ---------------- Compra (abajo) ---------------- */
   const openBuy  = () => { setSuccess(false); setBuyOpen(true) }
   const closeBuy = () => { if (!processing) { setBuyOpen(false); setSuccess(false) } }
   const confirmBuy = () => {
@@ -74,39 +105,7 @@ export default function App () {
     }, 1200)
   }
 
-  /* ---------------- Enviar (solo desde saldo) ---------------- */
-  const openSend = () => {
-    const name = targetUser.trim()
-    if (!name) { setToast({ kind:"warn", text:"Escribe un usuario destino" }); return clearToastLater() }
-    if (!Number.isFinite(sendAmount) || sendAmount <= 0) { setToast({ kind:"warn", text:"Cantidad inválida" }); return clearToastLater() }
-    if (sendAmount > coins) { setToast({ kind:"warn", text:"Saldo insuficiente" }); return clearToastLater() }
-
-    // Avatar por Unavatar (100% frontend). Si falla, cae al placeholder local.
-    const handle = name.replace(/^@/, "")
-    setRecipientAvatar(`https://unavatar.io/tiktok/${encodeURIComponent(handle)}`)
-
-    setSuccess(false)
-    setSendOpen(true)
-  }
-  const closeSend = () => { if (!processing) { setSendOpen(false); setSuccess(false) } }
-  const confirmSend = () => {
-    setProcessing(true)
-    const user = targetUser.trim()
-    const amount = sendAmount
-    setTimeout(() => {
-      setCoins(c => c - amount)
-      setProcessing(false)
-      setSuccess(true)
-      setLastSend({ user, amount })
-      setTargetUser("")
-      setToast({ kind:"ok", text:`Se enviaron ${amount} monedas a ${user}` })
-      clearToastLater(2800)
-    }, 1100)
-  }
-
-  function clearToastLater (ms = 2200) {
-    setTimeout(() => setToast(null), ms)
-  }
+  function note(kind, text, ms = 2200) { setToast({ kind, text }); setTimeout(() => setToast(null), ms) }
 
   const remainingAfterSend = Math.max(0, coins - Math.max(0, sendAmount))
 
@@ -127,8 +126,39 @@ export default function App () {
         </div>
       </div>
 
-      {/* Aviso descuento */}
-      <div className="notice">
+      {/* ===== Enviar monedas (ARRIBA) ===== */}
+      <div className="panel sendbox">
+        <div className="strong">Enviar monedas</div>
+        <div className="row" style={{ marginBottom: 8 }}>
+          <input className="input" placeholder="Usuario"
+                 value={targetUser} onChange={e => setTargetUser(e.target.value)} />
+          <input className="input" type="number" min={1} step={1}
+                 value={sendAmount}
+                 onChange={e => setSendAmount(Math.max(1, Math.floor(Number(e.target.value || 0))))}
+                 style={{ width: 120 }} placeholder="Cantidad" />
+          <button className="btn primary" onClick={openSend}>Enviar</button>
+        </div>
+
+        {/* Vista previa del destinatario (avatar) */}
+        {targetUser.trim() && (
+          <div className="row" style={{ alignItems:"center", gap:10 }}>
+            <img
+              src={recipientAvatar || AVATAR_FALLBACK}
+              onError={(e)=>{ e.currentTarget.src = AVATAR_FALLBACK }}
+              alt="avatar"
+              className="avatar-sm"
+            />
+            <div style={{ fontWeight: 600 }}>{targetUser.trim()}</div>
+          </div>
+        )}
+
+        <div className="muted small" style={{ marginTop: 8 }}>
+          El envío se descuenta de tu saldo actual. Si necesitas más monedas, usa “Recargar”.
+        </div>
+      </div>
+
+      {/* ===== Recarga/Compras (ABAJO) ===== */}
+      <div className="notice" style={{ marginTop: 16 }}>
         <strong>Recargar:</strong> Ahorra un 25 % con una tarifa de servicio de terceros más baja.
         <label className="toggle">
           <input type="checkbox" checked={discount} onChange={() => setDiscount(v => !v)} />
@@ -136,7 +166,6 @@ export default function App () {
         </label>
       </div>
 
-      {/* Grid de paquetes */}
       <div className="pack-grid">
         {effectivePacks.map(p => {
           const isSel = selected === p.id
@@ -159,117 +188,61 @@ export default function App () {
         })}
       </div>
 
-      {/* Total + Recargar + Secure */}
       <div className="paycard">
         <div className="total">
           <div>Total</div>
           <div className="price">{mxn(totalPrice)}</div>
         </div>
-
         <div className="payment-section">
           <button className="recargar" onClick={openBuy} disabled={totalPrice <= 0}>Recargar</button>
           <span className="secure">SECURE Payment</span>
         </div>
       </div>
 
-      {/* Enviar */}
-      <div className="panel sendbox">
-        <div className="strong">Enviar monedas</div>
-        <div className="row">
-          <input className="input" placeholder="Usuario" value={targetUser} onChange={e => setTargetUser(e.target.value)} />
-          <input
-            className="input" type="number" min={1} step={1}
-            value={sendAmount} onChange={e => setSendAmount(Math.max(1, Math.floor(Number(e.target.value || 0))))}
-            style={{ width: 120 }} placeholder="Cantidad"
-          />
-          <button className="btn primary" onClick={openSend}>Enviar</button>
-        </div>
-        <div className="muted small" style={{ marginTop: 6 }}>
-          El envío se descuenta de tu saldo actual. Si necesitas más monedas, usa “Recargar”.
-        </div>
-      </div>
+      {/* MODAL: Enviar */}
+      {sendOpen && (
+        <Modal onClose={closeSend}>
+          {!success ? (
+            <>
+              <div className="modal-title">Send coins</div>
+              <Row label="Recipient">
+                <div className="strong" style={{ display:"flex", alignItems:"center", gap:8 }}>
+                  <img
+                    src={recipientAvatar || AVATAR_FALLBACK}
+                    onError={(e)=>{ e.currentTarget.src = AVATAR_FALLBACK }}
+                    alt="avatar"
+                    className="avatar-sm"
+                  />
+                  {targetUser}
+                </div>
+              </Row>
+              <Row label="Amount to send"><div className="strong">{sendAmount.toLocaleString("es-MX")} coins</div></Row>
+              <Row label="Balance after send"><div className="price">{remainingAfterSend.toLocaleString("es-MX")} coins</div></Row>
+              <FooterButtons processing={processing} onCancel={closeSend} onConfirm={confirmSend} confirmText="Confirm" />
+              {processing && <Waiter/>}
+            </>
+          ) : (
+            <SuccessBlock text={`Se enviaron ${lastSend.amount.toLocaleString("es-MX")} a ${lastSend.user}`} onClose={closeSend}/>
+          )}
+        </Modal>
+      )}
 
       {/* MODAL: Compra */}
       {buyOpen && (
-        <div className="modal-overlay" onClick={closeBuy}>
-          <motion.div className="modal" onClick={e => e.stopPropagation()} initial={{ scale:.96, opacity:0 }} animate={{ scale:1, opacity:1 }}>
-            {!success ? (
-              <>
-                <div className="modal-title">Order summary</div>
-                <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
-                  <div className="muted small">Payment method</div>
-                  <div><span className="badge">VISA</span> <span className="muted">•••• {CARD_LAST4}</span></div>
-                </div>
-                <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
-                  <div className="muted small">Purchase</div>
-                  <div className="strong">{packCoins.toLocaleString("es-MX")} coins</div>
-                </div>
-                <div className="row" style={{ justifyContent:"space-between", marginBottom:14 }}>
-                  <div className="muted small">Total</div>
-                  <div className="price">{mxn(totalPrice)}</div>
-                </div>
-                <div className="row" style={{ justifyContent:"flex-end", gap:8 }}>
-                  <button className="btn" onClick={closeBuy} disabled={processing}>Cancel</button>
-                  <button className="btn primary" onClick={confirmBuy} disabled={processing || totalPrice<=0}>
-                    {processing ? "Processing..." : "Pay"}
-                  </button>
-                </div>
-                {processing && <div className="waiting"><div className="spinner" /></div>}
-              </>
-            ) : (
-              <SuccessBlock text="Pago aprobado" onClose={closeBuy} />
-            )}
-          </motion.div>
-        </div>
-      )}
-
-      {/* MODAL: Enviar */}
-      {sendOpen && (
-        <div className="modal-overlay" onClick={closeSend}>
-          <motion.div className="modal" onClick={e => e.stopPropagation()} initial={{ scale:.96, opacity:0 }} animate={{ scale:1, opacity:1 }}>
-            {!success ? (
-              <>
-                <div className="modal-title">Send coins</div>
-
-                <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
-                  <div className="muted small">Recipient</div>
-                  <div className="strong" style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    {recipientAvatar ? (
-                      <img
-                        src={recipientAvatar}
-                        alt="avatar"
-                        className="avatar-sm"
-                        onError={(e) => { e.currentTarget.src = AVATAR_FALLBACK; }}
-                      />
-                    ) : null}
-                    {targetUser}
-                  </div>
-                </div>
-
-                <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
-                  <div className="muted small">Amount to send</div>
-                  <div className="strong">{sendAmount.toLocaleString("es-MX")} coins</div>
-                </div>
-
-                <div className="row" style={{ justifyContent:"space-between", marginBottom:14 }}>
-                  <div className="muted small">Balance after send</div>
-                  <div className="price">{remainingAfterSend.toLocaleString("es-MX")} coins</div>
-                </div>
-
-                <div className="row" style={{ justifyContent:"flex-end", gap:8 }}>
-                  <button className="btn" onClick={closeSend} disabled={processing}>Cancel</button>
-                  <button className="btn primary" onClick={confirmSend} disabled={processing || sendAmount > coins || sendAmount <= 0}>
-                    {processing ? "Processing..." : "Confirm"}
-                  </button>
-                </div>
-
-                {processing && <div className="waiting"><div className="spinner" /></div>}
-              </>
-            ) : (
-              <SuccessBlock text={`Se enviaron ${lastSend.amount.toLocaleString("es-MX")} a ${lastSend.user}`} onClose={closeSend} />
-            )}
-          </motion.div>
-        </div>
+        <Modal onClose={closeBuy}>
+          {!success ? (
+            <>
+              <div className="modal-title">Order summary</div>
+              <Row label="Payment method"><div><span className="badge">VISA</span> <span className="muted">•••• {CARD_LAST4}</span></div></Row>
+              <Row label="Purchase"><div className="strong">{packCoins.toLocaleString("es-MX")} coins</div></Row>
+              <Row label="Total"><div className="price">{mxn(totalPrice)}</div></Row>
+              <FooterButtons processing={processing} onCancel={closeBuy} onConfirm={confirmBuy} confirmText="Pay" />
+              {processing && <Waiter/>}
+            </>
+          ) : (
+            <SuccessBlock text="Pago aprobado" onClose={closeBuy}/>
+          )}
+        </Modal>
       )}
 
       {/* Toast */}
@@ -283,7 +256,28 @@ export default function App () {
   )
 }
 
-/** Bloque de éxito con paloma verde */
+/* ---------- UI helpers ---------- */
+const Modal = ({ children, onClose }) => (
+  <div className="modal-overlay" onClick={onClose}>
+    <motion.div className="modal" onClick={e => e.stopPropagation()} initial={{ scale:.96, opacity:0 }} animate={{ scale:1, opacity:1 }}>
+      {children}
+    </motion.div>
+  </div>
+)
+const Row = ({ label, children }) => (
+  <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
+    <div className="muted small">{label}</div>
+    {children}
+  </div>
+)
+const FooterButtons = ({ processing, onCancel, onConfirm, confirmText }) => (
+  <div className="row" style={{ justifyContent:"flex-end", gap:8 }}>
+    <button className="btn" onClick={onCancel} disabled={processing}>Cancel</button>
+    <button className="btn primary" onClick={onConfirm} disabled={processing}>{processing ? "Processing..." : confirmText}</button>
+  </div>
+)
+const Waiter = () => (<div className="waiting"><div className="spinner" /></div>)
+
 function SuccessBlock ({ text, onClose }) {
   return (
     <div style={{ textAlign: "center", padding: "8px 0 2px" }}>
