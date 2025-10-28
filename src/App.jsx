@@ -18,6 +18,11 @@ const DISPLAY_PACKS = [
 
 const CARD_LAST4 = "7284"
 
+// ✅ Usa la base de Vite para que funcione en GitHub Pages (subcarpeta /<REPO>/)
+const BASE = import.meta.env.BASE_URL || "/"
+const COIN_IMG = `${BASE}coin.png`
+const AVATAR_FALLBACK = `${BASE}avatar-fallback.png`
+
 export default function App () {
   const [coins, setCoins] = useState(99999999)
 
@@ -76,7 +81,7 @@ export default function App () {
     if (!Number.isFinite(sendAmount) || sendAmount <= 0) { setToast({ kind:"warn", text:"Cantidad inválida" }); return clearToastLater() }
     if (sendAmount > coins) { setToast({ kind:"warn", text:"Saldo insuficiente" }); return clearToastLater() }
 
-    // Avatar por Unavatar (100% frontend). Si falla, caerá al placeholder local.
+    // Avatar por Unavatar (100% frontend). Si falla, cae al placeholder local.
     const handle = name.replace(/^@/, "")
     setRecipientAvatar(`https://unavatar.io/tiktok/${encodeURIComponent(handle)}`)
 
@@ -117,7 +122,7 @@ export default function App () {
       <div className="balance-box">
         <div className="balance-label">Saldo actual:</div>
         <div className="balance-value">
-          <img src="/coin.png" alt="coin" className="coin-img" />
+          <img src={COIN_IMG} alt="coin" className="coin-img" />
           {coins.toLocaleString("es-MX")}
         </div>
       </div>
@@ -138,7 +143,7 @@ export default function App () {
           if (p.custom) {
             return (
               <button key={p.id} className={"pack custom " + (isSel ? "selected" : "")} onClick={() => setSelected(p.id)}>
-                <img src="/coin.png" alt="coin" className="coin-img" />
+                <img src={COIN_IMG} alt="coin" className="coin-img" />
                 <div className="big">Personalizar</div>
                 <div className="muted">Gran cantidad subvencionada</div>
               </button>
@@ -146,7 +151,7 @@ export default function App () {
           }
           return (
             <button key={p.id} className={"pack " + (isSel ? "selected" : "")} onClick={() => setSelected(p.id)}>
-              <img src="/coin.png" alt="coin" className="coin-img" />
+              <img src={COIN_IMG} alt="coin" className="coin-img" />
               <div className="big">{p.coins.toLocaleString("es-MX")}</div>
               <div className="muted">{mxn(p.price)}</div>
             </button>
@@ -234,7 +239,7 @@ export default function App () {
                         src={recipientAvatar}
                         alt="avatar"
                         className="avatar-sm"
-                        onError={(e) => { e.currentTarget.src = "/avatar-fallback.png"; }}
+                        onError={(e) => { e.currentTarget.src = AVATAR_FALLBACK; }}
                       />
                     ) : null}
                     {targetUser}
