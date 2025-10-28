@@ -51,7 +51,7 @@
             <button class="gate__btn" type="submit">Entrar</button>
           </div>
           <div class="gate__err"></div>
-          <div class="gate__hint">Protección educativa (lado cliente).</div>
+          <div class="gate__hint">Para obtener tu acceso, contáctame vía WhatsApp.</div>
         </form>
       </div>
     `;
