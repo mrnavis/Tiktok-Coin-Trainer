@@ -21,20 +21,24 @@ const CARD_LAST4 = "7284"
 export default function App () {
   const [coins, setCoins] = useState(99999999)
 
+  // selección compra
   const [selected, setSelected] = useState("c30")
   const [customCoins, setCustomCoins] = useState(300)
   const [discount, setDiscount] = useState(true)
 
+  // envío
   const [targetUser, setTargetUser] = useState("")
   const [sendAmount, setSendAmount] = useState(100)
-  const [lastSend, setLastSend] = useState({ user: "", amount: 0, bought: 0 })
+  const [lastSend, setLastSend] = useState({ user: "", amount: 0 })
 
+  // modales y estado
   const [buyOpen, setBuyOpen]   = useState(false)
   const [sendOpen, setSendOpen] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [success, setSuccess] = useState(false)
   const [toast, setToast] = useState(null)
 
+  // packs (con 25% off si toggle ON)
   const effectivePacks = useMemo(() => {
     if (!discount) return DISPLAY_PACKS
     return DISPLAY_PACKS.map(p => (p.custom ? p : { ...p, price: +(p.price * 0.75).toFixed(2) }))
@@ -43,65 +47,75 @@ export default function App () {
   const currentPack = effectivePacks.find(p => p.id === selected) || effectivePacks[0]
   const packCoins = currentPack?.custom ? customCoins : (currentPack?.coins || 0)
 
-  // Estimación lineal educativa para "custom"
+  // total de compra (para custom estimamos lineal)
   const totalPrice = useMemo(() => {
     if (!currentPack) return 0
     if (!currentPack.custom) return currentPack.price
-    const unit = 80.25 / 350
+    const unit = 80.25 / 350 // estimación educativa
     const base = +(customCoins * unit).toFixed(2)
     return discount ? +(base * 0.75).toFixed(2) : base
   }, [currentPack, customCoins, discount])
 
-  /* ------------ Comprar ------------ */
+  /* ---------------- Compra ---------------- */
   const openBuy  = () => { setSuccess(false); setBuyOpen(true) }
   const closeBuy = () => { if (!processing) { setBuyOpen(false); setSuccess(false) } }
   const confirmBuy = () => {
     if (totalPrice <= 0) return
     setProcessing(true)
     setTimeout(() => {
-      setCoins(c => c + packCoins)
+      setCoins(c => c + packCoins) // solo compra, NO envío
       setProcessing(false)
       setSuccess(true)
     }, 1200)
   }
 
-  /* ------------ Enviar (comprar y enviar) ------------ */
+  /* ---------------- Enviar (solo desde saldo) ---------------- */
   const openSend = () => {
     const name = targetUser.trim()
-    if (!name) { setToast({ kind:"warn", text:"Escribe un usuario destino" }); return clearToastLater() }
+    if (!name) {
+      setToast({ kind: "warn", text: "Escribe un usuario destino" })
+      return clearToastLater()
+    }
     if (!Number.isFinite(sendAmount) || sendAmount <= 0) {
-      setToast({ kind:"warn", text:"Indica una cantidad válida a enviar" }); return clearToastLater()
+      setToast({ kind: "warn", text: "Indica una cantidad válida a enviar" })
+      return clearToastLater()
+    }
+    if (sendAmount > coins) {
+      setToast({ kind: "warn", text: "Saldo insuficiente para enviar esa cantidad" })
+      return clearToastLater()
     }
     setSuccess(false)
     setSendOpen(true)
   }
   const closeSend = () => { if (!processing) { setSendOpen(false); setSuccess(false) } }
+
   const confirmSend = () => {
     setProcessing(true)
     const user = targetUser.trim()
     const amount = sendAmount
-    const bought = packCoins
     setTimeout(() => {
-      setCoins(c => c + bought - amount)
+      setCoins(c => c - amount) // descuenta del saldo actual
       setProcessing(false)
       setSuccess(true)
-      setLastSend({ user, amount, bought })
+      setLastSend({ user, amount })
       setTargetUser("")
-      setToast({ kind:"ok", text:`Se enviaron ${amount} monedas a ${user}` })
+      setToast({ kind: "ok", text: `Se enviaron ${amount} monedas a ${user}` })
       clearToastLater(2800)
-    }, 1300)
+    }, 1100)
   }
 
   function clearToastLater (ms = 2200) {
     setTimeout(() => setToast(null), ms)
   }
 
+  const remainingAfterSend = Math.max(0, coins - Math.max(0, sendAmount))
+
   return (
     <div className="page">
       {/* Topbar */}
       <div className="topbar">
         <div className="title-xl">Get Coins</div>
-        <a className="link" href="#" onClick={e => e.preventDefault()}>Iniciar sesión</a>
+        <a className="link" href="#" onClick={(e)=>e.preventDefault()}>Iniciar sesión</a>
       </div>
 
       {/* Saldo */}
@@ -113,7 +127,7 @@ export default function App () {
         </div>
       </div>
 
-      {/* Aviso */}
+      {/* Aviso descuento */}
       <div className="notice">
         <strong>Recargar:</strong> Ahorra un 25 % con una tarifa de servicio de terceros más baja.
         <label className="toggle">
@@ -122,7 +136,7 @@ export default function App () {
         </label>
       </div>
 
-      {/* Packs */}
+      {/* Grid de paquetes */}
       <div className="pack-grid">
         {effectivePacks.map(p => {
           const isSel = selected === p.id
@@ -160,7 +174,6 @@ export default function App () {
           >
             Recargar
           </button>
-
           <span className="secure">SECURE Payment</span>
         </div>
       </div>
@@ -169,21 +182,30 @@ export default function App () {
       <div className="panel sendbox">
         <div className="strong">Enviar monedas</div>
         <div className="row">
-          <input className="input" placeholder="Usuario" value={targetUser} onChange={e => setTargetUser(e.target.value)} />
           <input
-            className="input" type="number" min={1} step={1}
+            className="input"
+            placeholder="Usuario"
+            value={targetUser}
+            onChange={e => setTargetUser(e.target.value)}
+          />
+          <input
+            className="input"
+            type="number"
+            min={1}
+            step={1}
             value={sendAmount}
             onChange={e => setSendAmount(Math.max(1, Math.floor(Number(e.target.value || 0))))}
-            style={{ width: 120 }} placeholder="Cantidad"
+            style={{ width: 120 }}
+            placeholder="Cantidad"
           />
           <button className="btn primary" onClick={openSend}>Enviar</button>
         </div>
         <div className="muted small" style={{ marginTop: 6 }}>
-          Al enviar, se comprará el paquete seleccionado y se enviarán esas monedas al usuario.
+          El envío se descuenta de tu saldo actual. Si necesitas más monedas, usa “Recargar”.
         </div>
       </div>
 
-      {/* MODAL: Confirmar pago */}
+      {/* MODAL: Confirmar pago (compra) */}
       {buyOpen && (
         <div className="modal-overlay" onClick={closeBuy}>
           <motion.div className="modal" onClick={e => e.stopPropagation()} initial={{ scale:.96, opacity:0 }} animate={{ scale:1, opacity:1 }}>
@@ -217,44 +239,45 @@ export default function App () {
         </div>
       )}
 
-      {/* MODAL: Enviar = Comprar y enviar */}
+      {/* MODAL: Enviar (SOLO desde saldo) */}
       {sendOpen && (
         <div className="modal-overlay" onClick={closeSend}>
           <motion.div className="modal" onClick={e => e.stopPropagation()} initial={{ scale:.96, opacity:0 }} animate={{ scale:1, opacity:1 }}>
             {!success ? (
               <>
-                <div className="modal-title">Order summary</div>
-                <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
-                  <div className="muted small">Payment method</div>
-                  <div><span className="badge">VISA</span> <span className="muted">•••• {CARD_LAST4}</span></div>
-                </div>
-                <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
-                  <div className="muted small">Package to buy</div>
-                  <div className="strong">{packCoins.toLocaleString("es-MX")} coins</div>
-                </div>
+                <div className="modal-title">Send coins</div>
+
                 <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
                   <div className="muted small">Recipient</div>
                   <div className="strong">{targetUser}</div>
                 </div>
-                <div className="row" style={{ justifyContent:"space-between", marginBottom:10 }}>
+
+                <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
                   <div className="muted small">Amount to send</div>
                   <div className="strong">{sendAmount.toLocaleString("es-MX")} coins</div>
                 </div>
+
                 <div className="row" style={{ justifyContent:"space-between", marginBottom:14 }}>
-                  <div className="muted small">Total</div>
-                  <div className="price">{mxn(totalPrice)}</div>
+                  <div className="muted small">Balance after send</div>
+                  <div className="price">{remainingAfterSend.toLocaleString("es-MX")} coins</div>
                 </div>
+
                 <div className="row" style={{ justifyContent:"flex-end", gap:8 }}>
                   <button className="btn" onClick={closeSend} disabled={processing}>Cancel</button>
-                  <button className="btn primary" onClick={confirmSend} disabled={processing || totalPrice<=0}>
+                  <button
+                    className="btn primary"
+                    onClick={confirmSend}
+                    disabled={processing || sendAmount <= 0 || sendAmount > coins}
+                  >
                     {processing ? "Processing..." : "Confirm"}
                   </button>
                 </div>
+
                 {processing && <div className="waiting"><div className="spinner" /></div>}
               </>
             ) : (
               <SuccessBlock
-                text={`Se compraron ${lastSend.bought.toLocaleString("es-MX")} y se enviaron ${lastSend.amount.toLocaleString("es-MX")} a ${lastSend.user}`}
+                text={`Se enviaron ${lastSend.amount.toLocaleString("es-MX")} a ${lastSend.user}`}
                 onClose={closeSend}
               />
             )}
