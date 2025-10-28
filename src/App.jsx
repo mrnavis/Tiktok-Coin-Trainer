@@ -76,9 +76,9 @@ export default function App () {
     if (!Number.isFinite(sendAmount) || sendAmount <= 0) { setToast({ kind:"warn", text:"Cantidad inválida" }); return clearToastLater() }
     if (sendAmount > coins) { setToast({ kind:"warn", text:"Saldo insuficiente" }); return clearToastLater() }
 
-    // Prepara el src del avatar a través del proxy (no bloquea el modal)
+    // Avatar por Unavatar (100% frontend). Si falla, caerá al placeholder local.
     const handle = name.replace(/^@/, "")
-    setRecipientAvatar(`/api/avatar/${encodeURIComponent(handle)}?raw=1`)
+    setRecipientAvatar(`https://unavatar.io/tiktok/${encodeURIComponent(handle)}`)
 
     setSuccess(false)
     setSendOpen(true)
@@ -229,7 +229,14 @@ export default function App () {
                 <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
                   <div className="muted small">Recipient</div>
                   <div className="strong" style={{ display:"flex", alignItems:"center", gap:8 }}>
-                    {recipientAvatar ? <img src={recipientAvatar} alt="avatar" className="avatar-sm" /> : null}
+                    {recipientAvatar ? (
+                      <img
+                        src={recipientAvatar}
+                        alt="avatar"
+                        className="avatar-sm"
+                        onError={(e) => { e.currentTarget.src = "/avatar-fallback.png"; }}
+                      />
+                    ) : null}
                     {targetUser}
                   </div>
                 </div>
