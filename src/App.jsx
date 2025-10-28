@@ -16,23 +16,19 @@ const DISPLAY_PACKS = [
   { id: "custom", custom: true },
 ]
 
-// Últimos 4 estáticos de la tarjeta
 const CARD_LAST4 = "7284"
 
 export default function App () {
   const [coins, setCoins] = useState(99999999)
 
-  // Selección y descuento
   const [selected, setSelected] = useState("c30")
   const [customCoins, setCustomCoins] = useState(300)
   const [discount, setDiscount] = useState(true)
 
-  // Envío
   const [targetUser, setTargetUser] = useState("")
   const [sendAmount, setSendAmount] = useState(100)
   const [lastSend, setLastSend] = useState({ user: "", amount: 0, bought: 0 })
 
-  // Modales y estado de UI
   const [buyOpen, setBuyOpen]   = useState(false)
   const [sendOpen, setSendOpen] = useState(false)
   const [processing, setProcessing] = useState(false)
@@ -47,20 +43,18 @@ export default function App () {
   const currentPack = effectivePacks.find(p => p.id === selected) || effectivePacks[0]
   const packCoins = currentPack?.custom ? customCoins : (currentPack?.coins || 0)
 
-  // Total a pagar del pack seleccionado
+  // Estimación lineal educativa para "custom"
   const totalPrice = useMemo(() => {
     if (!currentPack) return 0
     if (!currentPack.custom) return currentPack.price
-    // estimación lineal educativa (basada en c350=80.25)
     const unit = 80.25 / 350
     const base = +(customCoins * unit).toFixed(2)
     return discount ? +(base * 0.75).toFixed(2) : base
   }, [currentPack, customCoins, discount])
 
-  /* ------------ Compra ------------ */
+  /* ------------ Comprar ------------ */
   const openBuy  = () => { setSuccess(false); setBuyOpen(true) }
   const closeBuy = () => { if (!processing) { setBuyOpen(false); setSuccess(false) } }
-
   const confirmBuy = () => {
     if (totalPrice <= 0) return
     setProcessing(true)
@@ -82,14 +76,12 @@ export default function App () {
     setSendOpen(true)
   }
   const closeSend = () => { if (!processing) { setSendOpen(false); setSuccess(false) } }
-
   const confirmSend = () => {
     setProcessing(true)
     const user = targetUser.trim()
     const amount = sendAmount
     const bought = packCoins
     setTimeout(() => {
-      // Compra + envío: sumamos lo comprado y descontamos lo enviado
       setCoins(c => c + bought - amount)
       setProcessing(false)
       setSuccess(true)
@@ -108,11 +100,11 @@ export default function App () {
     <div className="page">
       {/* Topbar */}
       <div className="topbar">
-        <div className="title-xl">Obtener Monedas</div>
+        <div className="title-xl">Get Coins</div>
         <a className="link" href="#" onClick={e => e.preventDefault()}>Iniciar sesión</a>
       </div>
 
-      {/* SALDO con ícono */}
+      {/* Saldo */}
       <div className="balance-box">
         <div className="balance-label">Saldo actual:</div>
         <div className="balance-value">
@@ -121,7 +113,7 @@ export default function App () {
         </div>
       </div>
 
-      {/* Banner de descuento */}
+      {/* Aviso */}
       <div className="notice">
         <strong>Recargar:</strong> Ahorra un 25 % con una tarifa de servicio de terceros más baja.
         <label className="toggle">
@@ -130,7 +122,7 @@ export default function App () {
         </label>
       </div>
 
-      {/* Grid de paquetes */}
+      {/* Packs */}
       <div className="pack-grid">
         {effectivePacks.map(p => {
           const isSel = selected === p.id
@@ -153,44 +145,36 @@ export default function App () {
         })}
       </div>
 
-      {/* Total + Recargar */}
-      <div className="paycard" style={{ marginTop: 12 }}>
+      {/* Total + Recargar + Secure */}
+      <div className="paycard">
         <div className="total">
           <div>Total</div>
           <div className="price">{mxn(totalPrice)}</div>
         </div>
-        <button
-          className="recargar"
-          onClick={openBuy}
-          disabled={totalPrice <= 0}
-          style={{ opacity: totalPrice <= 0 ? 0.5 : 1 }}
-        >
-          Recargar
-        </button>
-        <div className="secure">
-          <span className="badge">SECURE</span><span>Payment</span>
+
+        <div className="payment-section">
+          <button
+            className="recargar"
+            onClick={openBuy}
+            disabled={totalPrice <= 0}
+          >
+            Recargar
+          </button>
+
+          <span className="secure">SECURE Payment</span>
         </div>
       </div>
 
       {/* Enviar */}
-      <div className="panel sendbox" style={{ marginTop: 14 }}>
+      <div className="panel sendbox">
         <div className="strong">Enviar monedas</div>
-        <div className="row" style={{ gap: 8, alignItems: "center" }}>
+        <div className="row">
+          <input className="input" placeholder="Usuario" value={targetUser} onChange={e => setTargetUser(e.target.value)} />
           <input
-            className="input"
-            placeholder="Usuario"
-            value={targetUser}
-            onChange={e => setTargetUser(e.target.value)}
-          />
-          <input
-            className="input"
-            type="number"
-            min={1}
-            step={1}
+            className="input" type="number" min={1} step={1}
             value={sendAmount}
             onChange={e => setSendAmount(Math.max(1, Math.floor(Number(e.target.value || 0))))}
-            style={{ width: 120 }}
-            placeholder="Cantidad"
+            style={{ width: 120 }} placeholder="Cantidad"
           />
           <button className="btn primary" onClick={openSend}>Enviar</button>
         </div>
@@ -205,27 +189,25 @@ export default function App () {
           <motion.div className="modal" onClick={e => e.stopPropagation()} initial={{ scale:.96, opacity:0 }} animate={{ scale:1, opacity:1 }}>
             {!success ? (
               <>
-                <div className="modal-title">Confirmar pago</div>
-                <div className="payrow" style={{ marginBottom: 8 }}>
-                  <span className="badge">VISA</span>
-                  <div className="muted">•••• {CARD_LAST4}</div>
+                <div className="modal-title">Order summary</div>
+                <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
+                  <div className="muted small">Payment method</div>
+                  <div><span className="badge">VISA</span> <span className="muted">•••• {CARD_LAST4}</span></div>
                 </div>
-                <div className="row" style={{ justifyContent:"space-between", marginBottom:10 }}>
-                  <div className="muted small">Compra</div>
-                  <div className="strong">{packCoins.toLocaleString("es-MX")} monedas</div>
+                <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
+                  <div className="muted small">Purchase</div>
+                  <div className="strong">{packCoins.toLocaleString("es-MX")} coins</div>
                 </div>
                 <div className="row" style={{ justifyContent:"space-between", marginBottom:14 }}>
                   <div className="muted small">Total</div>
                   <div className="price">{mxn(totalPrice)}</div>
                 </div>
-
                 <div className="row" style={{ justifyContent:"flex-end", gap:8 }}>
-                  <button className="btn" onClick={closeBuy} disabled={processing}>Cancelar</button>
+                  <button className="btn" onClick={closeBuy} disabled={processing}>Cancel</button>
                   <button className="btn primary" onClick={confirmBuy} disabled={processing || totalPrice<=0}>
-                    {processing ? "Procesando..." : "Pagar"}
+                    {processing ? "Processing..." : "Pay"}
                   </button>
                 </div>
-
                 {processing && <div className="waiting"><div className="spinner" /></div>}
               </>
             ) : (
@@ -241,37 +223,33 @@ export default function App () {
           <motion.div className="modal" onClick={e => e.stopPropagation()} initial={{ scale:.96, opacity:0 }} animate={{ scale:1, opacity:1 }}>
             {!success ? (
               <>
-                <div className="modal-title">Confirmar compra y envío</div>
-                <div className="payrow" style={{ marginBottom: 8 }}>
-                  <span className="badge">VISA</span>
-                  <div className="muted">•••• {CARD_LAST4}</div>
-                </div>
-
+                <div className="modal-title">Order summary</div>
                 <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
-                  <div className="muted small">Paquete a comprar</div>
-                  <div className="strong">{packCoins.toLocaleString("es-MX")} monedas</div>
+                  <div className="muted small">Payment method</div>
+                  <div><span className="badge">VISA</span> <span className="muted">•••• {CARD_LAST4}</span></div>
                 </div>
                 <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
-                  <div className="muted small">Usuario destino</div>
+                  <div className="muted small">Package to buy</div>
+                  <div className="strong">{packCoins.toLocaleString("es-MX")} coins</div>
+                </div>
+                <div className="row" style={{ justifyContent:"space-between", marginBottom:8 }}>
+                  <div className="muted small">Recipient</div>
                   <div className="strong">{targetUser}</div>
                 </div>
                 <div className="row" style={{ justifyContent:"space-between", marginBottom:10 }}>
-                  <div className="muted small">Cantidad a enviar</div>
-                  <div className="strong">{sendAmount.toLocaleString("es-MX")} monedas</div>
+                  <div className="muted small">Amount to send</div>
+                  <div className="strong">{sendAmount.toLocaleString("es-MX")} coins</div>
                 </div>
-
                 <div className="row" style={{ justifyContent:"space-between", marginBottom:14 }}>
-                  <div className="muted small">Total a pagar</div>
+                  <div className="muted small">Total</div>
                   <div className="price">{mxn(totalPrice)}</div>
                 </div>
-
                 <div className="row" style={{ justifyContent:"flex-end", gap:8 }}>
-                  <button className="btn" onClick={closeSend} disabled={processing}>Cancelar</button>
+                  <button className="btn" onClick={closeSend} disabled={processing}>Cancel</button>
                   <button className="btn primary" onClick={confirmSend} disabled={processing || totalPrice<=0}>
-                    {processing ? "Procesando..." : "Confirmar"}
+                    {processing ? "Processing..." : "Confirm"}
                   </button>
                 </div>
-
                 {processing && <div className="waiting"><div className="spinner" /></div>}
               </>
             ) : (
