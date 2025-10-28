@@ -1,10 +1,12 @@
-// Simple Gate v2 — Usuario/Contraseña en cliente (educativo)
+// Simple Gate v3 — Candado educativo (cliente)
+// - Usuario se normaliza: trim, sin '@', y en minúsculas.
+// - Incluye helpers: gateMake(u,p) y gateDebug(u,p).
 (() => {
   const STORAGE_KEY = "gate_v1_ok";
-  // 👉 Pega aquí tu SHA-256 de "usuario:contraseña"
-  const HASH = "95e86d32d93d6ef013ba3ddee5995ea3140935396cbdd18d7a148ab4e4f5704d";
 
-  // Estilos del overlay
+  // 👇 Pega aquí el hash que generes con gateMake("usuario","password")
+  const HASH = "REEMPLAZA_AQUI";
+
   const CSS = `
   .gate__backdrop{position:fixed;inset:0;background:#000;z-index:9999;display:flex;align-items:center;justify-content:center}
   .gate__card{width:min(92vw,420px);background:#111;border:1px solid #262626;border-radius:14px;padding:22px;color:#fff;box-shadow:0 10px 30px rgba(0,0,0,.4)}
@@ -18,19 +20,21 @@
   .gate__hint{color:#aaa;font-size:12px;margin-top:10px}
   `;
 
-  // Util: SHA-256 (hex)
+  // SHA-256 → hex
   async function sha256Hex(text){
     const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
     return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("");
   }
 
+  // Normalización consistente
+  function normUser(u){ return (u ?? "").trim().replace(/^@/, "").toLowerCase(); }
+  function normPass(p){ return (p ?? "").trim(); }
+
   function injectUI(){
-    // estilos
     const style = document.createElement("style");
     style.textContent = CSS;
     document.head.appendChild(style);
 
-    // overlay
     const wrap = document.createElement("div");
     wrap.className = "gate__backdrop";
     wrap.innerHTML = `
@@ -47,7 +51,7 @@
             <button class="gate__btn" type="submit">Entrar</button>
           </div>
           <div class="gate__err"></div>
-          <div class="gate__hint">Protección educativa en cliente.</div>
+          <div class="gate__hint">Protección educativa (lado cliente).</div>
         </form>
       </div>
     `;
@@ -58,11 +62,8 @@
     form.addEventListener("submit", async (e)=>{
       e.preventDefault();
       err.textContent = "";
-      // normalización: quitamos espacios y "@" inicial
-      const uRaw = form.elements.u.value;
-      const pRaw = form.elements.p.value;
-      const u = (uRaw ?? "").trim().replace(/^@/,"");
-      const p = (pRaw ?? "").trim();
+      const u = normUser(form.elements.u.value);
+      const p = normPass(form.elements.p.value);
       const h = await sha256Hex(`${u}:${p}`);
       if (h === HASH){
         localStorage.setItem(STORAGE_KEY,"ok");
@@ -76,18 +77,24 @@
 
   function isUnlocked(){ return localStorage.getItem(STORAGE_KEY) === "ok"; }
 
-  // Si no está desbloqueado, mostrar overlay
   window.addEventListener("DOMContentLoaded", ()=>{
     if (!isUnlocked()) injectUI();
   });
 
-  // API para salir manualmente
+  // APIs útiles en consola
   window.gateLogout = () => localStorage.removeItem(STORAGE_KEY);
 
-  // 🔍 Debug: compara el hash que se calcula con tu HASH
-  // Uso en consola: gateDebug("Navi","D4lila123")
-  window.gateDebug = async (u,p) => {
-    const entered = await sha256Hex(`${(u??"").trim().replace(/^@/,"")}:${(p??"").trim()}`);
+  // Genera hash con la MISMA normalización del login
+  // Uso: gateMake("Navi","D4lila123") → copia el hash y pégalo en HASH
+  window.gateMake = async (u, p) => {
+    const h = await sha256Hex(`${normUser(u)}:${normPass(p)}`);
+    console.log("HASH generado (pegar en lock.js):", h);
+    return h;
+  };
+
+  // Compara contra el HASH actual
+  window.gateDebug = async (u, p) => {
+    const entered = await sha256Hex(`${normUser(u)}:${normPass(p)}`);
     console.log("Esperado:", HASH);
     console.log("Calculado:", entered);
     console.log("Coincide:", entered === HASH);
