@@ -250,14 +250,28 @@ const FooterButtons = ({ processing, onCancel, onConfirm, confirmText }) => (
 const Waiter = () => (<div className="waiting"><div className="spinner" /></div>)
 function SuccessBlock({ text, onClose }) {
   return (
-    <div style={{ textAlign:"center", padding:"8px 0 2px" }}>
-      <div style={{ width:70, height:70, margin:"6px auto 10px",
-                    borderRadius:"999px", background:"#ecfdf5",
-                    display:"grid", placeItems:"center", border:"1px solid #bbf7d0" }}>
-        <span style={{ color:"#16a34a", fontSize:36, fontWeight:900 }}>✔</span>
+    <div style={{ textAlign: "center", padding: "8px 0 2px" }}>
+      <div
+        style={{
+          width: 70,
+          height: 70,
+          margin: "6px auto 10px",
+          borderRadius: "999px",
+          background: "#ecfdf5",
+          display: "grid",
+          placeItems: "center",
+          border: "1px solid #bbf7d0",
+        }}
+      >
+        <span style={{ color: "#16a34a", fontSize: 36, fontWeight: 900 }}>✔</span>
       </div>
-      <div style={{ fontWeight:800, marginBottom:12 }}>{text}</div>
-      <button className="btn primary" onClick={onClose}>Cerrar</button>
+      <div style={{ fontWeight: 800, marginBottom: 6 }}>{text}</div>
+      <div style={{ fontSize: 13, color: "#bbb", marginBottom: 12 }}>
+        Se acreditarán las monedas en máximo 24 horas.
+      </div>
+      <button className="btn primary" onClick={onClose}>
+        Cerrar
+      </button>
     </div>
-  )
+  );
 }
