@@ -6,39 +6,31 @@ const mxn = n =>
 
 // Paquetes (MXN)
 const DISPLAY_PACKS = [
-  { id: "c30",    coins: 30,    price: 6.89 },
-  { id: "c350",   coins: 350,   price: 80.25 },
-  { id: "c700",   coins: 700,   price: 160.49 },
-  { id: "c1400",  coins: 1400,  price: 320.95 },
-  { id: "c3500",  coins: 3500,  price: 802.39 },
-  { id: "c7000",  coins: 7000,  price: 1604.75 },
+  { id: "c30", coins: 30, price: 6.89 },
+  { id: "c350", coins: 350, price: 80.25 },
+  { id: "c700", coins: 700, price: 160.49 },
+  { id: "c1400", coins: 1400, price: 320.95 },
+  { id: "c3500", coins: 3500, price: 802.39 },
+  { id: "c7000", coins: 7000, price: 1604.75 },
   { id: "c17500", coins: 17500, price: 4011.85 },
   { id: "custom", custom: true },
 ]
 
 const CARD_LAST4 = "7284"
-
-// ✅ base para GitHub Pages (sirve también local)
 const BASE = import.meta.env.BASE_URL || "/"
 const COIN_IMG = `${BASE}coin.png`
 const AVATAR_FALLBACK = `${BASE}avatar-fallback.png`
 
-export default function App () {
-  const [coins, setCoins] = useState(999999999)
-
-  // compra
+export default function App() {
+  const [coins, setCoins] = useState(99999999)
   const [selected, setSelected] = useState("c30")
   const [customCoins, setCustomCoins] = useState(300)
   const [discount, setDiscount] = useState(true)
-
-  // envío
   const [targetUser, setTargetUser] = useState("")
   const [sendAmount, setSendAmount] = useState(100)
   const [lastSend, setLastSend] = useState({ user: "", amount: 0 })
   const [recipientAvatar, setRecipientAvatar] = useState(null)
-
-  // modales y estado
-  const [buyOpen, setBuyOpen]   = useState(false)
+  const [buyOpen, setBuyOpen] = useState(false)
   const [sendOpen, setSendOpen] = useState(false)
   const [processing, setProcessing] = useState(false)
   const [success, setSuccess] = useState(false)
@@ -50,9 +42,8 @@ export default function App () {
   }, [discount])
 
   const currentPack = effectivePacks.find(p => p.id === selected) || effectivePacks[0]
-  const packCoins = currentPack?.custom ? customCoins : (currentPack?.coins || 0)
+  const packCoins = currentPack?.custom ? customCoins : currentPack?.coins || 0
 
-  // total para custom (estimación)
   const totalPrice = useMemo(() => {
     if (!currentPack) return 0
     if (!currentPack.custom) return currentPack.price
@@ -61,23 +52,19 @@ export default function App () {
     return discount ? +(base * 0.75).toFixed(2) : base
   }, [currentPack, customCoins, discount])
 
-  /* ---------------- Enviar (arriba) ---------------- */
   const openSend = () => {
     const name = targetUser.trim()
-    if (!name) { note("warn", "Escribe un usuario destino"); return }
-    if (!Number.isFinite(sendAmount) || sendAmount <= 0) { note("warn", "Cantidad inválida"); return }
-    if (sendAmount > coins) { note("warn", "Saldo insuficiente"); return }
+    if (!name) return note("warn", "Escribe un usuario destino")
+    if (!Number.isFinite(sendAmount) || sendAmount <= 0) return note("warn", "Cantidad inválida")
+    if (sendAmount > coins) return note("warn", "Saldo insuficiente")
 
     const handle = name.replace(/^@/, "")
-    // Avatar por Unavatar (frontend); si falla, cae a placeholder local
     setRecipientAvatar(`https://unavatar.io/tiktok/${encodeURIComponent(handle)}`)
-
     setSuccess(false)
     setSendOpen(true)
   }
 
-  const closeSend = () => { if (!processing) { setSendOpen(false); setSuccess(false) } }
-
+  const closeSend = () => !processing && (setSendOpen(false), setSuccess(false))
   const confirmSend = () => {
     setProcessing(true)
     const user = targetUser.trim()
@@ -92,32 +79,34 @@ export default function App () {
     }, 1000)
   }
 
-  /* ---------------- Compra (abajo) ---------------- */
-  const openBuy  = () => { setSuccess(false); setBuyOpen(true) }
-  const closeBuy = () => { if (!processing) { setBuyOpen(false); setSuccess(false) } }
+  const openBuy = () => (setSuccess(false), setBuyOpen(true))
+  const closeBuy = () => !processing && (setBuyOpen(false), setSuccess(false))
   const confirmBuy = () => {
     if (totalPrice <= 0) return
     setProcessing(true)
     setTimeout(() => {
-      setCoins(c => c + packCoins) // solo compra
+      setCoins(c => c + packCoins)
       setProcessing(false)
       setSuccess(true)
     }, 1200)
   }
 
-  function note(kind, text, ms = 2200) { setToast({ kind, text }); setTimeout(() => setToast(null), ms) }
+  function note(kind, text, ms = 2200) {
+    setToast({ kind, text })
+    setTimeout(() => setToast(null), ms)
+  }
 
   const remainingAfterSend = Math.max(0, coins - Math.max(0, sendAmount))
 
   return (
-    <div className="page">
-      {/* Topbar */}
+    <div className="page dark">
       <div className="topbar">
         <div className="title-xl">Get Coins</div>
-        <a className="link" href="#" onClick={(e)=>e.preventDefault()}>Iniciar sesión</a>
+        <a className="link" href="#" onClick={e => e.preventDefault()}>
+          Iniciar sesión
+        </a>
       </div>
 
-      {/* Saldo */}
       <div className="balance-box">
         <div className="balance-label">Saldo actual:</div>
         <div className="balance-value">
@@ -126,7 +115,7 @@ export default function App () {
         </div>
       </div>
 
-      {/* ===== Enviar monedas (ARRIBA) ===== */}
+      {/* Enviar monedas */}
       <div className="panel sendbox">
         <div className="strong">Enviar monedas</div>
         <div className="row" style={{ marginBottom: 8 }}>
@@ -138,32 +127,19 @@ export default function App () {
                  style={{ width: 120 }} placeholder="Cantidad" />
           <button className="btn primary" onClick={openSend}>Enviar</button>
         </div>
-
-        {/* Vista previa del destinatario (avatar) */}
         {targetUser.trim() && (
           <div className="row" style={{ alignItems:"center", gap:10 }}>
-            <img
-              src={recipientAvatar || AVATAR_FALLBACK}
-              onError={(e)=>{ e.currentTarget.src = AVATAR_FALLBACK }}
-              alt="avatar"
-              className="avatar-sm"
-            />
+            <img src={recipientAvatar || AVATAR_FALLBACK}
+                 onError={e => e.currentTarget.src = AVATAR_FALLBACK}
+                 alt="avatar" className="avatar-sm" />
             <div style={{ fontWeight: 600 }}>{targetUser.trim()}</div>
           </div>
         )}
-
-        <div className="muted small" style={{ marginTop: 8 }}>
-          El envío se descuenta de tu saldo actual. Si necesitas más monedas, usa “Recargar”.
-        </div>
       </div>
 
-      {/* ===== Recarga/Compras (ABAJO) ===== */}
+      {/* Recargar monedas */}
       <div className="notice" style={{ marginTop: 16 }}>
-        <strong>Recargar:</strong> Ahorra un 25 % con una tarifa de servicio de terceros más baja.
-        <label className="toggle">
-          <input type="checkbox" checked={discount} onChange={() => setDiscount(v => !v)} />
-          <span>{discount ? "ON" : "OFF"}</span>
-        </label>
+        <strong>Recargar:</strong> Ahorra un 25 % con una tarifa más baja.
       </div>
 
       <div className="pack-grid">
@@ -199,7 +175,7 @@ export default function App () {
         </div>
       </div>
 
-      {/* MODAL: Enviar */}
+      {/* Modales */}
       {sendOpen && (
         <Modal onClose={closeSend}>
           {!success ? (
@@ -207,12 +183,9 @@ export default function App () {
               <div className="modal-title">Send coins</div>
               <Row label="Recipient">
                 <div className="strong" style={{ display:"flex", alignItems:"center", gap:8 }}>
-                  <img
-                    src={recipientAvatar || AVATAR_FALLBACK}
-                    onError={(e)=>{ e.currentTarget.src = AVATAR_FALLBACK }}
-                    alt="avatar"
-                    className="avatar-sm"
-                  />
+                  <img src={recipientAvatar || AVATAR_FALLBACK}
+                       onError={e=>{e.currentTarget.src=AVATAR_FALLBACK}}
+                       alt="avatar" className="avatar-sm" />
                   {targetUser}
                 </div>
               </Row>
@@ -227,7 +200,6 @@ export default function App () {
         </Modal>
       )}
 
-      {/* MODAL: Compra */}
       {buyOpen && (
         <Modal onClose={closeBuy}>
           {!success ? (
@@ -245,7 +217,6 @@ export default function App () {
         </Modal>
       )}
 
-      {/* Toast */}
       {toast && (
         <div className={"toast " + (toast.kind === "ok" ? "ok" : "warn")}>
           {toast.kind === "ok" ? <span className="check">✔</span> : <span className="warn">!</span>}
@@ -256,7 +227,7 @@ export default function App () {
   )
 }
 
-/* ---------- UI helpers ---------- */
+/* Helpers */
 const Modal = ({ children, onClose }) => (
   <div className="modal-overlay" onClick={onClose}>
     <motion.div className="modal" onClick={e => e.stopPropagation()} initial={{ scale:.96, opacity:0 }} animate={{ scale:1, opacity:1 }}>
@@ -277,18 +248,15 @@ const FooterButtons = ({ processing, onCancel, onConfirm, confirmText }) => (
   </div>
 )
 const Waiter = () => (<div className="waiting"><div className="spinner" /></div>)
-
-function SuccessBlock ({ text, onClose }) {
+function SuccessBlock({ text, onClose }) {
   return (
-    <div style={{ textAlign: "center", padding: "8px 0 2px" }}>
-      <div style={{
-        width: 70, height: 70, margin: "6px auto 10px",
-        borderRadius: "999px", background: "#ecfdf5",
-        display: "grid", placeItems: "center", border: "1px solid #bbf7d0"
-      }}>
-        <span style={{ color: "#16a34a", fontSize: 36, fontWeight: 900 }}>✔</span>
+    <div style={{ textAlign:"center", padding:"8px 0 2px" }}>
+      <div style={{ width:70, height:70, margin:"6px auto 10px",
+                    borderRadius:"999px", background:"#ecfdf5",
+                    display:"grid", placeItems:"center", border:"1px solid #bbf7d0" }}>
+        <span style={{ color:"#16a34a", fontSize:36, fontWeight:900 }}>✔</span>
       </div>
-      <div style={{ fontWeight: 800, marginBottom: 12 }}>{text}</div>
+      <div style={{ fontWeight:800, marginBottom:12 }}>{text}</div>
       <button className="btn primary" onClick={onClose}>Cerrar</button>
     </div>
   )
