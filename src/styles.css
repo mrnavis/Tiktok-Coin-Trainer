@@ -378,3 +378,67 @@ html, body {
 .login-btn:hover {
   background: #ff497a;
 }
+/* Encabezado */
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 14px 18px;
+  background: #000;
+  border-bottom: 1px solid #222;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.title-with-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.title-with-logo h1 {
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+  letter-spacing: .5px;
+  margin: 0;
+}
+
+/* Aro con gradiente animado tipo TikTok */
+.logo-ring {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  overflow: visible;
+}
+.logo-ring::before {
+  content: "";
+  position: absolute;
+  inset: -3px;                 /* grosor del aro */
+  border-radius: 999px;
+  background: conic-gradient(
+    from 0deg,
+    #25F4EE, #FE2C55, #25F4EE
+  );
+  filter: blur(0.4px);
+  animation: spin 4s linear infinite;
+  z-index: 0;
+}
+.tiktok-logo {
+  position: relative;
+  z-index: 1;
+  width: 34px;
+  height: 34px;
+  object-fit: contain;
+  background: #000;            /* para que el aro no se vea debajo del png */
+  border-radius: 999px;
+}
+
+/* Giro del aro */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
